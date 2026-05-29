@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
@@ -18,12 +18,37 @@ function App() {
   const [correctLetters, setCorrectLetters] = useState([]);
   const [wrongLetters, setWrongLetters] = useState([]);
 
+  useEffect(() => {
+    const handleKeydown = event => {
+      const { key, keyCode } = event;
+      if (playable && keyCode >= 65 && keyCode <= 90) {
+        const letter = key.toLowerCase();
+        if (selectedWord.includes(letter)) {
+          if (!correctLetters.includes(letter)) {
+            setCorrectLetters(currentLetters => [...currentLetters, letter]);
+          } else {
+            //show(setShowNotification);
+          }
+        } else {
+          if (!wrongLetters.includes(letter)) {
+            setWrongLetters(wrongLetters => [...wrongLetters, letter]);
+          } else {
+            //show(setShowNotification);
+          }
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeydown);
+
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [correctLetters, wrongLetters, playable]);
+
   return (
     <>
       <Header />
       <div className="game-container">
         <Figure />
-        <WrongLetters />
+        <WrongLetters wrongLetters={wrongLetters}/>
         <Word selectedWord={selectedWord} correctLetters={correctLetters}/>
       </div>
     </>
