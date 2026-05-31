@@ -10,6 +10,7 @@ import Word from './components/Word'
 import Notification from './components/Notification'
 import Popup from './components/Popup'
 import {showNotification as show} from "./helpers/helpers"
+import { checkWin } from './helpers/helpers';
 import './App.css'
 
 const words = ['application', 'programming', 'interface', 'wizard'];
@@ -21,6 +22,7 @@ function App() {
   const [correctLetters, setCorrectLetters] = useState([]);
   const [wrongLetters, setWrongLetters] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
+  const [score, setScore] = useState(0);
 
   useEffect(() => {
     const handleKeydown = event => {
@@ -49,6 +51,9 @@ function App() {
 
   function playAgain() {
     setPlayable(true);
+    if (checkWin(correctLetters, wrongLetters, selectedWord) === 'lose') {
+      setScore(0);
+    }
 
     // Empty Arrays
     setCorrectLetters([]);
@@ -66,7 +71,8 @@ function App() {
         <WrongLetters wrongLetters={wrongLetters}/>
         <Word selectedWord={selectedWord} correctLetters={correctLetters}/>
       </div>
-      <Popup correctLetters={correctLetters} wrongLetters={wrongLetters} selectedWord={selectedWord} setPlayable={setPlayable} playAgain={playAgain}/>
+      <Popup correctLetters={correctLetters} wrongLetters={wrongLetters} selectedWord={selectedWord} 
+      setPlayable={setPlayable} playAgain={playAgain} score={score} setScore={setScore}/>
       <Notification showNotification={showNotification} />
     </>
   );
