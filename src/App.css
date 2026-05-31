@@ -3,34 +3,54 @@
 }
 
 body, #root {
-  background-color: #34495e;
-  color: #fff;
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  color: #ffffff;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 80vh;
   margin: 0;
   overflow: hidden;
+  background: 
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.18), transparent 35%),
+    linear-gradient(135deg, #0f172a 0%, #172e4b 55%, #0b1120 100%);
 }
 
 h1 {
-  margin: 20px 0 0;
+  margin: 36px 0 8px;
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+h2,
+p {
+  margin: 0;
 }
 
 .game-container {
-  padding: 20px 30px;
+  padding: 36px;
   position: relative;
   margin: auto;
-  height: 350px;
-  width: 450px;
+  height: 430px;
+  width: 620px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 28px;
+  box-shadow: 
+    0 24px 80px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
 }
 
 .figure-container {
   fill: transparent;
-  stroke: #fff;
+  stroke: #f8fafc;
   stroke-width: 4px;
   stroke-linecap: round;
+  filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.75));
 }
 
 .figure-part {
@@ -39,42 +59,57 @@ h1 {
 
 .wrong-letters-container {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  text-align: right;
+  top: 38px;
+  right: 38px;
+  min-width: 150px;
+  padding: 18px 20px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
 }
 
 .wrong-letters-container p {
-  margin: 0 0 5px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fca5a5;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .wrong-letters-container span {
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #fee2e2;
 }
 
 .word {
   display: flex;
   position: absolute;
-  bottom: 10px;
+  bottom: 42px;
   left: 50%;
   transform: translateX(-50%);
+  gap: 8px;
 }
 
 .letter {
-  border-bottom: 3px solid #2980b9;
+  border-bottom: 4px solid #38bdf8;
   display: inline-flex;
-  font-size: 30px;
+  font-size: 34px;
+  font-weight: 800;
   align-items: center;
   justify-content: center;
-  margin: 0 3px;
-  height: 50px;
-  width: 20px;
+  height: 56px;
+  width: 28px;
+  color: #f8fafc;
+  text-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
 }
 
 .popup-container {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(8px);
   position: fixed;
   top: 0;
   bottom: 0;
@@ -87,21 +122,35 @@ h1 {
 }
 
 .popup {
-  background: #2980b9;
-  border-radius: 5px;
-  box-shadow: 0 15px 10px 3px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 24px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+  padding: 32px;
   text-align: center;
+  width: 360px;
+}
+
+.popup h2 {
+  margin-bottom: 12px;
+  font-size: 28px;
 }
 
 .popup button {
   cursor: pointer;
-  background-color: #fff;
-  color: #2980b9;
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  color: #f8fafc;
   border: 0;
-  margin-top: 20px;
-  padding: 12px 20px;
+  border-radius: 999px;
+  margin-top: 24px;
+  padding: 12px 24px;
   font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
+}
+
+.popup button:hover {
+  transform: translateY(-2px);
 }
 
 .popup button:active {
@@ -113,18 +162,21 @@ h1 {
 }
 
 .notification-container {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 10px 10px 0 0;
-  padding: 15px 20px;
+  background-color: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 18px 18px 0 0;
+  padding: 16px 24px;
   position: absolute;
-  bottom: -50px;
+  bottom: -70px;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.28);
   transition: transform 0.3s ease-in-out;
 }
 
 .notification-container p {
   margin: 0;
+  font-weight: 600;
 }
 
 .notification-container.show {
-  transform: translateY(-50px);
+  transform: translateY(-70px);
 }
