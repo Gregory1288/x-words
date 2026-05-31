@@ -6,12 +6,13 @@ const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAga
   let finalMessageRevealWord = '';
   let playable = true;
   let buttonText = '';
+  const result = selectedWord ? checkWin(correctLetters, wrongLetters, selectedWord) : ""; // safe check for empty selectedWord
 
-  if( checkWin(correctLetters, wrongLetters, selectedWord) === 'win' ) {
+  if( result === 'win' ) {
     finalMessage = 'Congratulations! You won! 😃';
     playable = false;
     buttonText = 'Continue';
-  } else if( checkWin(correctLetters, wrongLetters, selectedWord) === 'lose' ) {
+  } else if( result === 'lose' ) {
     finalMessage = 'Unfortunately you lost. 😕';
     finalMessageRevealWord = `...the word was: ${selectedWord}`;
     playable = false;
@@ -20,13 +21,13 @@ const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAga
 
   useEffect(() => {
     setPlayable(playable);
-  });
+  },[playable]);
 
   useEffect(() => {
-    if(!playable) {
+    if(result === 'win') {
       setScore(prev => prev + 6 - wrongLetters.length);
     }
-  }, [playable]);
+  }, [result]);
 
   return (
     <div className="popup-container" style={finalMessage !== '' ? {display:'flex'} : {}}>
