@@ -180,3 +180,45 @@ p {
 .notification-container.show {
   transform: translateY(-70px);
 }
+
+.category-selection {
+  width: min(90%, 600px);
+  margin: 40px auto;
+  padding: 30px;
+  text-align: center;
+  background: rgba(10, 25, 47, 0.9);
+  border-radius: 16px;
+}
+
+.category-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin: 25px 0;
+}
+
+.category-buttons button,
+.start-game-button {
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.selected-category {
+  outline: 3px solid white;
+  transform: translateY(-2px);
+}
+
+.start-game-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.current-category {
+  text-align: center;
+  text-transform: capitalize;
+  font-weight: bold;
+}

@@ -9,6 +9,7 @@ import WrongLetters from './components/WrongLetters'
 import Word from './components/Word'
 import Notification from './components/Notification'
 import Popup from './components/Popup'
+import CategorySelection from './components/CategorySelection'
 import {showNotification as show} from "./helpers/helpers"
 import { checkWin } from './helpers/helpers';
 import { getRandomWord } from './helpers/firestore';
@@ -17,20 +18,16 @@ import './App.css'
 
 function App() {
   const [selectedWord, setSelectedWord] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [playable, setPlayable] = useState(false);
   const [correctLetters, setCorrectLetters] = useState([]);
   const [wrongLetters, setWrongLetters] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
   const [score, setScore] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [gameStarted, setGameStarted] = useState(false);
 
-  useEffect(() => {
-    getRandomWord().then(word => {
-      setSelectedWord(word);
-      setLoading(false);
-      setPlayable(true);
-    });
-  }, []);
+
 
   useEffect(() => {
     const handleKeydown = event => {
@@ -57,7 +54,27 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeydown);
   }, [correctLetters, wrongLetters, playable]);
 
-  function playAgain() {
+  async function startGame() {
+    try {
+      setLoading(true);
+      setGameStarted(true);
+
+      const word = await getRandomWord(selectedCategory);
+
+      setSelectedWord(word);
+      setCorrectLetters([]);
+      setWrongLetters([]);
+      setPlayable(true);
+    } catch (error) {
+      console.error(error);
+      alert("No words were found for this category.");
+      setGameStarted(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function playAgain() {
     setLoading(true);
     setCorrectLetters([]);
     setWrongLetters([]);
@@ -66,30 +83,61 @@ function App() {
       setScore(0);
     }
 
-    getRandomWord().then(word => {
+    try {
+      const word = await getRandomWord(selectedCategory);
+
       setSelectedWord(word);
-      setLoading(false);
       setPlayable(true);
-    });
+    } catch (error) {
+      console.error(error);
+      alert("Unable to load another word.");
+    } finally {
+      setLoading(false);
+    }
   }
+  
 
   return (
     <>
       <Header />
-      {loading ? (
+      {!gameStarted ? (
+        <CategorySelection
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          startGame={startGame}
+        /> 
+      ) :loading ? (
         <p>Loading...</p>
       ) : (
-        <div className="game-container">
-          <Figure wrongLetters={wrongLetters}/>
-          <WrongLetters wrongLetters={wrongLetters}/>
-          <Word selectedWord={selectedWord} correctLetters={correctLetters}/>
-        </div>
+        <>
+          <p className="current-category">
+            Category: {selectedCategory}
+          </p>
+
+          <div className="game-container">
+            <Figure wrongLetters={wrongLetters}/>
+            <WrongLetters wrongLetters={wrongLetters}/>
+            <Word 
+              selectedWord={selectedWord} 
+              correctLetters={correctLetters}
+            />
+          </div>
+
+          <Popup 
+            correctLetters={correctLetters} 
+            wrongLetters={wrongLetters}
+            selectedWord={selectedWord}
+            setPlayable={setPlayable}
+            playAgain={playAgain}
+            score={score}
+            setScore={setScore}
+          />
+          <Notification showNotification={showNotification}/>
+        </>
       )}
-      <Popup correctLetters={correctLetters} wrongLetters={wrongLetters} selectedWord={selectedWord} 
-      setPlayable={setPlayable} playAgain={playAgain} score={score} setScore={setScore}/>
-      <Notification showNotification={showNotification} />
     </>
   );
 }
+
 
 export default App
