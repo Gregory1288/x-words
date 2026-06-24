@@ -1,7 +1,7 @@
 import React from 'react'
 
-const Figure = ({ wrongLetters }) => {
-  const errors = wrongLetters.length
+const Figure = ({ wrongLetters, maxWrongGuesses }) => {
+  const errors = Math.ceil((wrongLetters.length / maxWrongGuesses) * 6);
 
   return (
     <svg height="250" width="200" className="figure-container">
