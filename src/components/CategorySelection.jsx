@@ -1,6 +1,8 @@
 function CategorySelection({
     selectedCategory,
     setSelectedCategory,
+    selectedDifficulty,
+    setSelectedDifficulty,
     startGame,
 }) {
     return (
@@ -30,10 +32,35 @@ function CategorySelection({
                 </button>
             </div>
 
+            <h2>Select Difficulty</h2>
+
+            <div className="difficulty-buttons">
+                <button
+                    onClick={() => setSelectedDifficulty("easy")}
+                    className={selectedDifficulty === "easy" ? "selected-difficulty" : ""}
+                >
+                    Easy
+                </button>
+
+                <button
+                    onClick={() => setSelectedDifficulty("medium")}
+                    className={selectedDifficulty === "medium" ? "selected-difficulty" : ""}
+                >
+                    Medium
+                </button>
+
+                <button
+                    onClick={() => setSelectedDifficulty("hard")}
+                    className={selectedDifficulty === "hard" ? "selected-difficulty" : ""}
+                >
+                    Hard
+                </button>
+            </div>
+
             <button
                 className="start-game-button"
                 onClick={startGame}
-                disabled={!selectedCategory}
+                disabled={!selectedCategory || !selectedDifficulty}
             >
                 Start Game
             </button>

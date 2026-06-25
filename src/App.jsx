@@ -10,6 +10,7 @@ import Word from './components/Word'
 import Notification from './components/Notification'
 import Popup from './components/Popup'
 import CategorySelection from './components/CategorySelection'
+import {difficultySettings} from "./config/difficultyConfig"
 import {showNotification as show} from "./helpers/helpers"
 import { checkWin } from './helpers/helpers';
 import { getRandomWord } from './helpers/firestore';
@@ -26,7 +27,11 @@ function App() {
   const [score, setScore] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState("");
 
+  const maxWrongGuesses = selectedDifficulty
+    ? difficultySettings[selectedDifficulty].maxWrongGuesses
+    : 6; // Default to 6 if no difficulty is selected
 
 
   useEffect(() => {
@@ -52,7 +57,7 @@ function App() {
     window.addEventListener('keydown', handleKeydown);
 
     return () => window.removeEventListener('keydown', handleKeydown);
-  }, [correctLetters, wrongLetters, playable]);
+  }, [correctLetters, wrongLetters, playable, selectedWord]);
 
   async function startGame() {
     try {
@@ -79,7 +84,7 @@ function App() {
     setCorrectLetters([]);
     setWrongLetters([]);
 
-    if (checkWin(correctLetters, wrongLetters, selectedWord) === 'lose') {
+    if (checkWin(correctLetters, wrongLetters, selectedWord, maxWrongGuesses) === 'lose') {
       setScore(0);
     }
 
@@ -104,6 +109,8 @@ function App() {
         <CategorySelection
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
+          selectedDifficulty={selectedDifficulty}
+          setSelectedDifficulty={setSelectedDifficulty}
           startGame={startGame}
         /> 
       ) :loading ? (
@@ -114,8 +121,23 @@ function App() {
             Category: {selectedCategory}
           </p>
 
+          <div className="game-information">
+            <p>
+              Difficulty:{" "}
+              {difficultySettings[selectedDifficulty].label}
+            </p>
+
+            <p>
+              Wrong guesses remaining:{" "}
+              {Math.max(maxWrongGuesses - wrongLetters.length, 0)}
+            </p>
+          </div>
+
           <div className="game-container">
-            <Figure wrongLetters={wrongLetters}/>
+            <Figure 
+              wrongLetters={wrongLetters}
+              maxWrongGuesses={maxWrongGuesses}
+            />
             <WrongLetters wrongLetters={wrongLetters}/>
             <Word 
               selectedWord={selectedWord} 
@@ -131,6 +153,7 @@ function App() {
             playAgain={playAgain}
             score={score}
             setScore={setScore}
+            maxWrongGuesses={maxWrongGuesses}
           />
           <Notification showNotification={showNotification}/>
         </>

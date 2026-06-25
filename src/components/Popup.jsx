@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { checkWin } from '../helpers/helpers';
 
-const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAgain, score, setScore}) => {
+const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAgain, score, setScore, maxWrongGuesses}) => {
   let finalMessage = '';
   let finalMessageRevealWord = '';
   let playable = true;
   let buttonText = '';
-  const result = selectedWord ? checkWin(correctLetters, wrongLetters, selectedWord) : ""; // safe check for empty selectedWord
+  const result = selectedWord ? checkWin(correctLetters, wrongLetters, selectedWord, maxWrongGuesses) : ""; // safe check for empty selectedWord
 
   if( result === 'win' ) {
     finalMessage = 'Congratulations! You won! 😃';
