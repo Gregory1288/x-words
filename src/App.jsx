@@ -10,6 +10,9 @@ import Word from './components/Word'
 import Notification from './components/Notification'
 import Popup from './components/Popup'
 import CategorySelection from './components/CategorySelection'
+import CharacterSelection from './components/CharacterSelection'
+import HeartsDisplay from './components/HeartsDisplay'
+import {characters} from './config/characterConfig'
 import {difficultySettings} from "./config/difficultyConfig"
 import {showNotification as show} from "./helpers/helpers"
 import { checkWin } from './helpers/helpers';
@@ -31,11 +34,16 @@ function App() {
   const [selectedDifficulty, setSelectedDifficulty] = useState("");
   const [user, setUser] = useState(null);
   const [activeScreen, setActiveScreen] = useState('home');
+  const [selectedCharacter, setSelectedCharacter] = useState("");
+  const [showCharacterSelection, setShowCharacterSelection] = useState(false);
 
   const maxWrongGuesses = selectedDifficulty
     ? difficultySettings[selectedDifficulty].maxWrongGuesses
     : 6; // Default to 6 if no difficulty is selected
 
+  const selectedCharacterData = characters.find(
+    (character) => character.id === selectedCharacter
+  );
 
   useEffect(() => {
     const handleKeydown = event => {
@@ -73,10 +81,23 @@ function App() {
     return unsubscribe;
   }, [activeScreen]);
 
+  function goToCharacterSelection() {
+    setShowCharacterSelection(true);
+  }
+
+  function goBackToSetup() {
+    setShowCharacterSelection(false);
+  }
+
   async function startGame() {
+    if (!selectedCharacter) {
+      return;
+    }
+    
     try {
       setLoading(true);
       setGameStarted(true);
+      setShowCharacterSelection(false);
 
       const word = await getRandomWord(selectedCategory);
 
@@ -88,6 +109,7 @@ function App() {
       console.error(error);
       alert("No words were found for this category.");
       setGameStarted(false);
+      setShowCharacterSelection(true);
     } finally {
       setLoading(false);
     }
@@ -133,38 +155,48 @@ function App() {
         <Profile user={user} onBack={() => setActiveScreen('home')} />
       ) : activeScreen === 'leaderboard' ? (
         <Leaderboard onBack={() => setActiveScreen('home')} user={user} />
-      ) : !gameStarted ? (
+      ) : !gameStarted && !showCharacterSelection ? (
         <CategorySelection
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
           selectedDifficulty={selectedDifficulty}
           setSelectedDifficulty={setSelectedDifficulty}
-          startGame={startGame}
+          goToCharacterSelection={goToCharacterSelection}
         /> 
+      ) : !gameStarted && showCharacterSelection ? (
+        <CharacterSelection
+          selectedCharacter={selectedCharacter}
+          setSelectedCharacter={setSelectedCharacter}
+          startGame={startGame}
+          goBack={goBackToSetup}
+        />
       ) :loading ? (
         <p>Loading...</p>
       ) : (
         <>
-          <p className="current-category">
-            Category: {selectedCategory}
-          </p>
-
           <div className="game-information">
             <p>
-              Difficulty:{" "}
-              {difficultySettings[selectedDifficulty].label}
+              Category:{""}
+              <span className="game-information-value">{selectedCategory}</span>
             </p>
 
             <p>
-              Wrong guesses remaining:{" "}
-              {Math.max(maxWrongGuesses - wrongLetters.length, 0)}
+              Difficulty:{""}
+              <span className="game-information-value">{difficultySettings[selectedDifficulty].label}</span>
             </p>
+
+            <div className="lives-display">
+              <span>Lives:</span>
+              <HeartsDisplay 
+                maxWrongGuesses={maxWrongGuesses} 
+                wrongLetters={wrongLetters} 
+              />
+            </div>
           </div>
 
           <div className="game-container">
             <Figure 
-              wrongLetters={wrongLetters}
-              maxWrongGuesses={maxWrongGuesses}
+              selectedCharacterData={selectedCharacterData}
             />
             <WrongLetters wrongLetters={wrongLetters}/>
             <Word 
@@ -192,4 +224,4 @@ function App() {
 }
 
 
-export default App
+export default App;
