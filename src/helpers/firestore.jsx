@@ -1,5 +1,5 @@
 import { db } from "../firebase";
-import { collection, addDoc, getDocs, query, where,} from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, doc, getDoc, setDoc } from "firebase/firestore";
 
 const words = [
 
@@ -61,4 +61,28 @@ export async function getRandomWord(category) {
   const randomIndex = Math.floor(Math.random() * matchingWords.length);
 
   return matchingWords[randomIndex];
+}
+
+export async function updatePlayerStats(userId, roundScore, won) {
+  const statsRef = doc(db, 'playerStats', userId);
+  const statsSnap = await getDoc(statsRef);
+
+  const existing = statsSnap.exists() ? statsSnap.data() : {
+    totalGamesPlayed: 0,
+    totalGamesWon: 0,
+    averageScore: 0,
+    totalScore: 0,
+  };
+
+  const totalGamesPlayed = existing.totalGamesPlayed + 1;
+  const totalGamesWon = existing.totalGamesWon + (won ? 1 : 0);
+  const totalScore = existing.totalScore + roundScore;
+  const averageScore = totalGamesPlayed ? totalScore / totalGamesPlayed : 0;
+
+  await setDoc(statsRef, {
+    totalGamesPlayed,
+    totalGamesWon,
+    averageScore,
+    totalScore,
+  }, { merge: true });
 }
