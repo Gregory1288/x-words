@@ -3,7 +3,7 @@ function CategorySelection({
     setSelectedCategory,
     selectedDifficulty,
     setSelectedDifficulty,
-    startGame,
+    goToCharacterSelection,
 }) {
     return (
         <div className="category-selection">
@@ -59,10 +59,10 @@ function CategorySelection({
 
             <button
                 className="start-game-button"
-                onClick={startGame}
+                onClick={goToCharacterSelection}
                 disabled={!selectedCategory || !selectedDifficulty}
             >
-                Start Game
+                Next
             </button>
         </div>
     );
