@@ -1,5 +1,5 @@
-import charlieBrownImg from '../assets/characters/charlie-brown.png';
-import anyaImg from '../assets/characters/anya.png';
+import charlieBrownImg from '../assets/charlie-brown.png';
+import anyaImg from '../assets/anya.png';
 
 export const characters = [
     {
