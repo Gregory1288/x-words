@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { onAuthStateChanged } from 'firebase/auth'
 
 import Header from './components/Header'
+import Profile from './components/Profile'
 import Figure from './components/Figure'
 import WrongLetters from './components/WrongLetters'
 import Word from './components/Word'
@@ -13,7 +12,8 @@ import CategorySelection from './components/CategorySelection'
 import {difficultySettings} from "./config/difficultyConfig"
 import {showNotification as show} from "./helpers/helpers"
 import { checkWin } from './helpers/helpers';
-import { getRandomWord } from './helpers/firestore';
+import { getRandomWord, updatePlayerStats } from './helpers/firestore';
+import { auth } from './firebase'
 import './App.css'
 
 
@@ -28,6 +28,8 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState("");
+  const [user, setUser] = useState(null);
+  const [activeScreen, setActiveScreen] = useState('home');
 
   const maxWrongGuesses = selectedDifficulty
     ? difficultySettings[selectedDifficulty].maxWrongGuesses
@@ -58,6 +60,17 @@ function App() {
 
     return () => window.removeEventListener('keydown', handleKeydown);
   }, [correctLetters, wrongLetters, playable, selectedWord]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (!currentUser && activeScreen === 'profile') {
+        setActiveScreen('home');
+      }
+    });
+
+    return unsubscribe;
+  }, [activeScreen]);
 
   async function startGame() {
     try {
@@ -100,12 +113,24 @@ function App() {
       setLoading(false);
     }
   }
+
+  async function handleGameComplete({ result, roundScore }) {
+    if (!user) return;
+
+    try {
+      await updatePlayerStats(user.uid, roundScore, result === 'win');
+    } catch (error) {
+      console.error('Unable to update player stats', error);
+    }
+  }
   
 
   return (
     <>
-      <Header />
-      {!gameStarted ? (
+      <Header user={user} onProfile={() => setActiveScreen('profile')} />
+      {activeScreen === 'profile' ? (
+        <Profile user={user} onBack={() => setActiveScreen('home')} />
+      ) : !gameStarted ? (
         <CategorySelection
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
@@ -154,6 +179,7 @@ function App() {
             score={score}
             setScore={setScore}
             maxWrongGuesses={maxWrongGuesses}
+            onGameComplete={handleGameComplete}
           />
           <Notification showNotification={showNotification}/>
         </>

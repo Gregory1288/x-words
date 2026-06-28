@@ -1,19 +1,10 @@
-import { useEffect, useState } from 'react'
-import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
+import { useState } from 'react'
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 import { auth } from '../firebase'
 // I just added the auth here cuz im lazy to change the name of the file to firebaseAuth.js or something. might change later
 
-const Header = () => {
-  const [user, setUser] = useState(null)
+const Header = ({ user, onProfile }) => {
   const [isSigningIn, setIsSigningIn] = useState(false)
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser)
-    })
-
-    return () => unsubscribe()
-  }, [])
 
   async function handleSignIn() {
     setIsSigningIn(true)
@@ -46,6 +37,7 @@ const Header = () => {
       {user ? (
         <div>
           <p>Signed in as {user.displayName || user.email}</p>
+          <button className="auth-button" onClick={onProfile}>Profile</button>
           <button className="auth-button" onClick={handleSignOut}>Sign out</button>
         </div>
       ) : (
