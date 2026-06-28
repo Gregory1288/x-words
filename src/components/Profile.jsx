@@ -30,6 +30,7 @@ const Profile = ({ user, onBack }) => {
             totalGamesWon: 0,
             averageScore: 0,
             totalScore: 0,
+            highScore: 0,
           });
         }
       } catch (fetchError) {
@@ -77,8 +78,8 @@ const Profile = ({ user, onBack }) => {
             <p>{stats.averageScore.toFixed(1)}</p>
           </div>
           <div className="stat-card">
-            <h3>Total cumulative score</h3>
-            <p>{stats.totalScore}</p>
+            <h3>High score</h3>
+            <p>{stats.highScore}</p>
           </div>
         </div>
       )}

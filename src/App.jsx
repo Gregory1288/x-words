@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 
 import Header from './components/Header'
+import Leaderboard from './components/Leaderboard'
 import Profile from './components/Profile'
 import Figure from './components/Figure'
 import WrongLetters from './components/WrongLetters'
@@ -114,11 +115,11 @@ function App() {
     }
   }
 
-  async function handleGameComplete({ result, roundScore }) {
+  async function handleGameComplete({ result, roundScore, sessionScore }) {
     if (!user) return;
 
     try {
-      await updatePlayerStats(user.uid, roundScore, result === 'win');
+      await updatePlayerStats(user.uid, roundScore, sessionScore, result === 'win', user.displayName);
     } catch (error) {
       console.error('Unable to update player stats', error);
     }
@@ -127,9 +128,11 @@ function App() {
 
   return (
     <>
-      <Header user={user} onProfile={() => setActiveScreen('profile')} />
+      <Header user={user} onProfile={() => setActiveScreen('profile')} onLeaderboard={() => setActiveScreen('leaderboard')} />
       {activeScreen === 'profile' ? (
         <Profile user={user} onBack={() => setActiveScreen('home')} />
+      ) : activeScreen === 'leaderboard' ? (
+        <Leaderboard onBack={() => setActiveScreen('home')} user={user} />
       ) : !gameStarted ? (
         <CategorySelection
           selectedCategory={selectedCategory}

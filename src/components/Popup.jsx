@@ -33,7 +33,8 @@ const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAga
   useEffect(() => {
     if (result && !hasReportedResult.current) {
       const roundScore = result === 'win' ? Math.max(6 - wrongLetters.length, 0) : 0;
-      onGameComplete?.({ result, roundScore });
+      const sessionScore = result === 'win' ? score + roundScore : score;
+      onGameComplete?.({ result, roundScore, sessionScore });
       hasReportedResult.current = true;
     }
   }, [result, wrongLetters.length, onGameComplete])
