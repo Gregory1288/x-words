@@ -9,38 +9,38 @@ const Profile = ({ user, onBack }) => {
 
   useEffect(() => {
     if (!user) {
-      setStats(null)
-      setLoading(false)
-      return
+      setStats(null);
+      setLoading(false);
+      return;
     }
 
     async function fetchStats() {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       try {
-        const statsRef = doc(db, 'playerStats', user.uid)
-        const statsSnap = await getDoc(statsRef)
+        const statsRef = doc(db, 'playerStats', user.uid);
+        const statsSnap = await getDoc(statsRef);
 
         if (statsSnap.exists()) {
-          setStats(statsSnap.data())
+          setStats(statsSnap.data());
         } else {
           setStats({
             totalGamesPlayed: 0,
             totalGamesWon: 0,
             averageScore: 0,
             totalScore: 0,
-          })
+          });
         }
       } catch (fetchError) {
-        setError('Failed to load profile statistics.')
-        console.error(fetchError)
+        setError('Failed to load profile statistics.');
+        console.error(fetchError);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    fetchStats()
+    fetchStats();
   }, [user])
 
   if (!user) {
