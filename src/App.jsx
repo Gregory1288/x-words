@@ -155,7 +155,7 @@ function App() {
         <Profile user={user} onBack={() => setActiveScreen('home')} />
       ) : activeScreen === 'leaderboard' ? (
         <Leaderboard onBack={() => setActiveScreen('home')} user={user} />
-      ) : !gameStarted ? && !showCharacterSelection ? (
+      ) : !gameStarted && !showCharacterSelection ? (
         <CategorySelection
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
