@@ -63,7 +63,7 @@ export async function getRandomWord(category) {
   return matchingWords[randomIndex];
 }
 
-export async function updatePlayerStats(userId, roundScore, sessionScore, won) {
+export async function updatePlayerStats(userId, roundScore, sessionScore, won, displayName) {
   const statsRef = doc(db, 'playerStats', userId);
   const statsSnap = await getDoc(statsRef);
 
@@ -73,6 +73,7 @@ export async function updatePlayerStats(userId, roundScore, sessionScore, won) {
     averageScore: 0,
     totalScore: 0,
     highScore: 0,
+    displayName: displayName || '',
   };
 
   const totalGamesPlayed = existing.totalGamesPlayed + 1;
@@ -87,5 +88,6 @@ export async function updatePlayerStats(userId, roundScore, sessionScore, won) {
     averageScore,
     totalScore,
     highScore,
+    displayName: displayName || existing.displayName || '',
   }, { merge: true });
 }
