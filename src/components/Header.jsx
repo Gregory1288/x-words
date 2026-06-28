@@ -33,7 +33,7 @@ const Header = ({ user, onProfile }) => {
     <>
       <h1>X-Words</h1>
       <p>Welcome to X-Words! Can you guess the correct word?</p>
-
+      
       {user ? (
         <div>
           <p>Signed in as {user.displayName || user.email}</p>

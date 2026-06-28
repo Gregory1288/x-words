@@ -114,11 +114,11 @@ function App() {
     }
   }
 
-  async function handleGameComplete({ result, roundScore }) {
+  async function handleGameComplete({ result, roundScore, sessionScore }) {
     if (!user) return;
 
     try {
-      await updatePlayerStats(user.uid, roundScore, result === 'win');
+      await updatePlayerStats(user.uid, roundScore, sessionScore, result === 'win');
     } catch (error) {
       console.error('Unable to update player stats', error);
     }
