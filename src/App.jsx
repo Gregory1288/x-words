@@ -36,10 +36,17 @@ function App() {
   const [activeScreen, setActiveScreen] = useState('home');
   const [selectedCharacter, setSelectedCharacter] = useState("");
   const [showCharacterSelection, setShowCharacterSelection] = useState(false);
+  const [selectedMode, setSelectedMode] = useState("");
+  const [timeRemaining, setTimeRemaining] = useState(null);
+  const [timedOut, setTimedOut] = useState(false);
 
   const maxWrongGuesses = selectedDifficulty
     ? difficultySettings[selectedDifficulty].maxWrongGuesses
     : 6; // Default to 6 if no difficulty is selected
+
+  const timeLimit = selectedDifficulty
+    ? difficultySettings[selectedDifficulty].timeLimit
+    : 0; // Default to 0 if no difficulty is selected
 
   const selectedCharacterData = characters.find(
     (character) => character.id === selectedCharacter
@@ -81,12 +88,66 @@ function App() {
     return unsubscribe;
   }, [activeScreen]);
 
+  useEffect(() => {
+    if (selectedMode !== "timed" || !gameStarted || loading || !playable)
+    {
+      return;
+    }
+    
+    const timerId = setInterval(() => {
+      setTimeRemaining((currentTime) => {
+        if (currentTime === null) {
+          return currentTime;
+        }
+
+        return Math.max(currentTime - 1, 0);
+      });
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [selectedMode, gameStarted, loading, playable]);
+
+  useEffect(() => {
+    if (selectedMode === "timed" && gameStarted && playable && timeRemaining === 0)
+    {
+      setPlayable(false);
+      setTimedOut(true);
+    }  
+  }, [selectedMode, gameStarted, playable, timeRemaining]);
+
   function goToCharacterSelection() {
     setShowCharacterSelection(true);
   }
 
   function goBackToSetup() {
     setShowCharacterSelection(false);
+  }
+
+  function quitGame() {
+    const confirmed = window.confirm(
+      "Are you sure you want to quit? All current game progress will be reset."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setPlayable(false);
+    setGameStarted(false);
+    setLoading(false);
+    setShowCharacterSelection(false);
+    setActiveScreen('home');
+    setSelectedCategory("");
+    setSelectedDifficulty("");
+    setSelectedMode("");
+    setSelectedCharacter("");
+    setSelectedWord("");
+    setCorrectLetters([]);
+    setWrongLetters([]);
+    setScore(0);
+    setShowNotification(false);
+    setTimeRemaining(null);
+    setTimedOut(false);
   }
 
   async function startGame() {
@@ -104,7 +165,16 @@ function App() {
       setSelectedWord(word);
       setCorrectLetters([]);
       setWrongLetters([]);
+      setPlayable(false);
+
+      if (selectedMode === "timed") {
+        setTimeRemaining(timeLimit);
+      } else {
+        setTimeRemaining(null);
+      }
+
       setPlayable(true);
+
     } catch (error) {
       console.error(error);
       alert("No words were found for this category.");
@@ -116,11 +186,20 @@ function App() {
   }
 
   async function playAgain() {
+    const previousResult = checkWin(
+      correctLetters,
+      wrongLetters,
+      selectedWord,
+      maxWrongGuesses,
+      timedOut
+    );
+
     setLoading(true);
     setCorrectLetters([]);
     setWrongLetters([]);
+    setTimedOut(false);
 
-    if (checkWin(correctLetters, wrongLetters, selectedWord, maxWrongGuesses) === 'lose') {
+    if (previousResult === 'lose') {
       setScore(0);
     }
 
@@ -128,6 +207,13 @@ function App() {
       const word = await getRandomWord(selectedCategory);
 
       setSelectedWord(word);
+
+      if (selectedMode === "timed") {
+        setTimeRemaining(timeLimit);
+      } else {
+        setTimeRemaining(null);
+      }
+
       setPlayable(true);
     } catch (error) {
       console.error(error);
@@ -157,6 +243,8 @@ function App() {
         <Leaderboard onBack={() => setActiveScreen('home')} user={user} />
       ) : !gameStarted && !showCharacterSelection ? (
         <CategorySelection
+          selectedMode={selectedMode}
+          setSelectedMode={setSelectedMode}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
           selectedDifficulty={selectedDifficulty}
@@ -176,6 +264,13 @@ function App() {
         <>
           <div className="game-information">
             <p>
+              Mode:{""}
+              <span className="game-information-value">
+                {selectedMode === "timed" ? "Timed" : "Classic"}
+              </span>
+            </p>
+
+            <p>
               Category:{""}
               <span className="game-information-value">{selectedCategory}</span>
             </p>
@@ -185,6 +280,21 @@ function App() {
               <span className="game-information-value">{difficultySettings[selectedDifficulty].label}</span>
             </p>
 
+            {selectedMode === "timed" && (
+              <p
+                className={
+                  timeRemaining <= 10
+                    ? "timer-display timer-warning"
+                    : "timer-display"
+                }
+              >
+                Time:{" "}
+                <span className="game-information-value">
+                  {timeRemaining}s
+                </span>
+              </p>
+            )}
+
             <div className="lives-display">
               <span>Lives:</span>
               <HeartsDisplay 
@@ -192,6 +302,14 @@ function App() {
                 wrongLetters={wrongLetters} 
               />
             </div>
+
+            <button
+              type="button"
+              className="quit-game-button"
+              onClick={quitGame}
+            >
+              Quit Game
+            </button>
           </div>
 
           <div className="game-container">
@@ -215,6 +333,8 @@ function App() {
             setScore={setScore}
             maxWrongGuesses={maxWrongGuesses}
             onGameComplete={handleGameComplete}
+            timedOut={timedOut}
+            quitGame={quitGame}
           />
           <Notification showNotification={showNotification}/>
         </>

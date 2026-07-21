@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { checkWin } from '../helpers/helpers';
 
-const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAgain, score, setScore, maxWrongGuesses, onGameComplete}) => {
+const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAgain, quitGame, score, setScore, maxWrongGuesses, onGameComplete, timedOut}) => {
   let finalMessage = '';
   let finalMessageRevealWord = '';
   let playable = true;
   let buttonText = '';
-  const result = selectedWord ? checkWin(correctLetters, wrongLetters, selectedWord, maxWrongGuesses) : ""; // safe check for empty selectedWord
+  const result = selectedWord ? checkWin(correctLetters, wrongLetters, selectedWord, maxWrongGuesses, timedOut) : ""; // safe check for empty selectedWord
   const hasReportedResult = useRef(false);
 
   if( result === 'win' ) {
@@ -14,7 +14,9 @@ const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAga
     playable = false;
     buttonText = 'Continue';
   } else if( result === 'lose' ) {
-    finalMessage = 'Unfortunately you lost. 😕';
+    finalMessage = timedOut
+      ? 'Time is up! ⏰'
+      : 'Unfortunately you lost. 😕';
     finalMessageRevealWord = `...the word was: ${selectedWord}`;
     playable = false;
     buttonText = 'Try Again';
@@ -49,7 +51,17 @@ const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAga
         <h2>{finalMessage}</h2>
         <h3>{finalMessageRevealWord}</h3>
         <h3>Your score: {score}</h3>
-        <button onClick={playAgain}>{buttonText}</button>
+        
+        <div className="popup-actions">
+          <button onClick={playAgain}>{buttonText}</button>
+          <button
+            type="button"
+            className="popup-quit-button"
+            onClick={quitGame}
+          >
+            Quit Game
+          </button>
+        </div>
       </div>
     </div>
   )
