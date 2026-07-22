@@ -335,6 +335,9 @@ function App() {
             onGameComplete={handleGameComplete}
             timedOut={timedOut}
             quitGame={quitGame}
+            selectedMode={selectedMode}
+            timeRemaining={timeRemaining}
+            timeLimit={timeLimit}
           />
           <Notification showNotification={showNotification}/>
         </>
