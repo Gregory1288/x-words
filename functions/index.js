@@ -1,32 +1,86 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+const { onCall } = require('firebase-functions/v2/https');
+const { setGlobalOptions } = require('firebase-functions');
 
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
-
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
 setGlobalOptions({ maxInstances: 10 });
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+exports.getCharacterReaction = onCall(async (request) => {
+  console.log('getCharacterReaction triggered');
+  const { word, outcome, personality, wrongCount } = request.data;
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+  if (!outcome || !personality) {
+    return { line: '...', tone: 'neutral' };
+  }
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'nvidia/nemotron-3-ultra-550b-a55b:free', // completely free model
+        messages: [
+          {
+            role: 'user',
+            content: `You are a ${personality} character reacting to a hangman game.
+The player just made a ${outcome} guess. Wrong guesses so far: ${wrongCount}.
+Return JSON only, no markdown, no backticks: { "line": "your one sentence reaction", "tone": "praise|taunt|panic|concern|smug" }`
+          }
+        ],
+      })
+    });
+
+    const data = await response.json();
+    console.log('OpenRouter response:', data);
+
+    const raw = data.choices?.[0]?.message?.content?.trim();
+    try {
+      return JSON.parse(raw);
+    } catch {
+      console.error('JSON parse failed:', raw);
+      return { line: '...', tone: 'neutral' };
+    }
+
+  } catch (err) {
+    console.error('OpenRouter call failed:', err.message);
+    return { line: '...', tone: 'neutral' };
+  }
+});
+
+exports.getWordFact = onCall(async (request) => {
+  console.log('getWordFact triggered');
+  const { word } = request.data;
+
+  if (!word || typeof word !== 'string') {
+    return { fact: null };
+  }
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+        messages: [
+          {
+            role: 'user',
+            content: `Give me one short, interesting fun fact about the word "${word}". One sentence only, no preamble.`
+          }
+        ],
+      })
+    });
+
+    const data = await response.json();
+    const fact = data.choices?.[0]?.message?.content?.trim();
+    console.log('Word fact:', fact);
+    return { fact: fact || null };
+
+  } catch (err) {
+    console.error('OpenRouter call failed:', err.message);
+    return { fact: null };
+  }
+});
