@@ -393,6 +393,11 @@ function App() {
     try {
       const word = await getRandomWord(selectedCategory);
       setSelectedWord(word);
+      if (selectedMode === "timed") {
+        setTimeRemaining(timeLimit);
+      } else {
+        setTimeRemaining(null);
+      }
       setPlayable(true);
     } catch (error) {
       console.error(error);
@@ -402,96 +407,153 @@ function App() {
     }
   }
 
-  async function handleGameComplete({ result, roundScore, sessionScore }) {
-    triggerReaction(result); 
-    if (!user) return;
-
-    try {
-      await updatePlayerStats(user.uid, roundScore, sessionScore, result === 'win', user.displayName, selectedCharacter);
-    } catch (error) {
-      console.error('Unable to update player stats', error);
-    }
-  }
-  
   const reactionCooldown = useRef(false);
 
-  async function triggerReaction(outcome) {
-    if (!selectedCharacterData) return;
-    if (reactionCooldown.current) return; 
+async function handleGameComplete({
+  result,
+  roundScore,
+  sessionScore,
+}) {
+  triggerReaction(result);
 
-    reactionCooldown.current = true;
-    setTimeout(() => { reactionCooldown.current = false; }, 10000);
+  if (!user) {
+    return;
+  }
 
-    setShowReaction(false);
+  // Regular Classic and Timed games update playerStats.
+  if (!isDailyWord) {
+    try {
+      await updatePlayerStats(
+        user.uid,
+        roundScore,
+        sessionScore,
+        result === "win",
+        user.displayName,
+        selectedCharacter
+      );
+    } catch (error) {
+      console.error(
+        "Unable to update player stats:",
+        error
+      );
+    }
+
+    return;
+  }
+
+  // Prevent the same Daily Word result from being saved twice.
+  if (
+    !dailyWordData ||
+    dailyAttemptSaving ||
+    dailyAttemptSaved
+  ) {
+    return;
+  }
+
+  // Freeze the Daily Word completion time.
+  let finalCompletionTime = dailyCompletionTime;
+
+  if (finalCompletionTime === null) {
+    if (dailyStartedAt !== null) {
+      finalCompletionTime = Math.max(
+        1,
+        Math.floor(
+          (Date.now() - dailyStartedAt) / 1000
+        )
+      );
+    } else {
+      finalCompletionTime = Math.max(
+        1,
+        dailyElapsedTime
+      );
+    }
+
+    setDailyCompletionTime(finalCompletionTime);
+    setDailyElapsedTime(finalCompletionTime);
+  }
+
+  try {
+    setDailyAttemptSaving(true);
+    setDailyAttemptError("");
+
+    await saveDailyAttempt({
+      userId: user.uid,
+      displayName:
+        user.displayName ||
+        user.email ||
+        "Anonymous Player",
+
+      dateKey:
+        dailyWordData.dateKey ||
+        getDailyDateKey(),
+
+      result,
+      wrongGuesses: wrongLetters.length,
+      completionTimeSeconds: finalCompletionTime,
+      score: roundScore,
+    });
+
+    setDailyAttemptSaved(true);
+  } catch (error) {
+    console.error(
+      "Unable to save Daily Word attempt:",
+      error
+    );
+
+    if (error.code === "permission-denied") {
+      setDailyAttemptError(
+        "This Daily Word attempt may already have been submitted."
+      );
+    } else {
+      setDailyAttemptError(
+        "Your result could not be saved. Please try again."
+      );
+    }
+  } finally {
+    setDailyAttemptSaving(false);
+  }
+}
+
+async function triggerReaction(outcome) {
+  if (!selectedCharacterData) {
+    return;
+  }
+
+  if (reactionCooldown.current) {
+    return;
+  }
+
+  reactionCooldown.current = true;
+
+  setTimeout(() => {
+    reactionCooldown.current = false;
+  }, 10000);
+
+  setShowReaction(false);
+
+  try {
     const result = await fetchCharacterReaction(
       selectedWord,
       outcome,
       selectedCharacterData.personalityType,
       wrongLetters.length
     );
+
     setReaction(result);
     setShowReaction(true);
-    setTimeout(() => setShowReaction(false), 3000);
+
+    setTimeout(() => {
+      setShowReaction(false);
+    }, 3000);
+  } catch (error) {
+    console.error(
+      "Unable to fetch character reaction:",
+      error
+    );
+
+    reactionCooldown.current = false;
   }
-
-  if (!isDailyWord) {
-      try {
-        await updatePlayerStats(user.uid, roundScore, sessionScore, result === 'win', user.displayName);
-      } catch (error) {
-        console.error('Unable to update player stats', error);
-      }
-
-      return;
-    }
-
-    // Prevent the same Daily Word result from being saved repeatedly.
-    if (!dailyWordData || dailyAttemptSaving || dailyAttemptSaved) return;
-
-    // Freeze the completion time when result first appears.
-    // On a retry, reuse the same time instead of measuring again.
-    let finalCompletionTime = dailyCompletionTime;
-
-    if (finalCompletionTime === null) {
-      if (dailyStartedAt !== null) {
-        finalCompletionTime = Math.max(1, Math.floor((Date.now() - dailyStartedAt) / 1000));
-      } else {
-        finalCompletionTime = Math.max(1, dailyElapsedTime);
-      }
-
-      setDailyCompletionTime(finalCompletionTime);
-      setDailyElapsedTime(finalCompletionTime);
-    }
-
-    try {
-      setDailyAttemptSaving(true);
-      setDailyAttemptError("");
-
-      await saveDailyAttempt({
-        userId: user.uid,
-        displayName: user.displayName || user.email || "Anonymous Player",
-        dateKey: dailyWordData.dateKey || getDailyDateKey(),
-        result,
-        wrongGuesses: wrongLetters.length,
-        completionTimeSeconds: finalCompletionTime,
-        score: roundScore,
-      });
-
-      setDailyAttemptSaved(true);
-    } catch (error) {
-      console.error(
-        "Unable to save Daily Word attempt:",
-        error
-      );
-
-      if (error.code === "permission-denied") {
-        setDailyAttemptError("This Daily Word attempt may already have been submitted.");
-      } else {
-        setDailyAttemptError("Your result could not be saved. Please try again.");
-      }
-    } finally {
-      setDailyAttemptSaving(false);
-    }
-  }
+}
 
   function formatElapsedTime(totalSeconds) {
     const minutes = Math.floor(totalSeconds / 60);
@@ -654,7 +716,7 @@ function App() {
             dailyAttemptSaving={dailyAttemptSaving}
             dailyAttemptSaved={dailyAttemptSaved}
             dailyAttemptError={dailyAttemptError}
-            dailyCompletionTime={dailyCompletionTime !== null ? dailyCompletionTime : dailyElapsedTime}
+            dailyCompletionTimeSeconds={dailyCompletionTime !== null ? dailyCompletionTime : dailyElapsedTime}
           />
           <Notification showNotification={showNotification}/>
         </>
