@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 import Header from './components/Header'
 import Leaderboard from './components/Leaderboard'
@@ -42,6 +44,7 @@ function App() {
   const [selectedMode, setSelectedMode] = useState("");
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [timedOut, setTimedOut] = useState(false);
+  const [playerStats, setPlayerStats] = useState(null);
 
   const maxWrongGuesses = selectedDifficulty
     ? difficultySettings[selectedDifficulty].maxWrongGuesses
@@ -83,13 +86,19 @@ function App() {
   }, [correctLetters, wrongLetters, playable, selectedWord]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      if (!currentUser && activeScreen === 'profile') {
-        setActiveScreen('home');
+      if (currentUser) {
+        const statsRef = doc(db, 'playerStats', currentUser.uid);
+        const snap = await getDoc(statsRef);
+        if (snap.exists()) {
+          setPlayerStats(snap.data());
+        }
+      } else {
+        setPlayerStats(null);
+        if (activeScreen === 'profile') setActiveScreen('home');
       }
     });
-
     return unsubscribe;
   }, [activeScreen]);
 
@@ -283,6 +292,7 @@ function App() {
           setSelectedCharacter={setSelectedCharacter}
           startGame={startGame}
           goBack={goBackToSetup}
+          playerStats={playerStats}
         />
       ) :loading ? (
         <p>Loading...</p>

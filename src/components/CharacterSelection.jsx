@@ -1,34 +1,50 @@
-import {characters} from '../config/characterConfig';
+import { characters } from '../config/characterConfig';
+import { isCharacterUnlocked } from '../helpers/unlocks';
 
 function CharacterSelection({ 
     selectedCharacter,
     setSelectedCharacter,
     startGame,
     goBack,
+    playerStats,
 }) {
     return (
         <div className="character-selection">
             <h2>Select a Character</h2>
 
             <div className="character-grid">
-                {characters.map((character) => (
-                    <button
-                        key={character.id}
-                        className={
-                            selectedCharacter === character.id 
-                            ? "character-card selected-character"
-                            : "character-card"
-                        }
-                        onClick={() => setSelectedCharacter(character.id)}
-                    >
-                        <img 
-                            src={character.image} 
-                            alt={character.name}
-                            className="character-card-image" 
-                        />
-                        <p>{character.name}</p>
-                    </button>
-                ))}
+                {characters.map((character) => {
+                    const unlocked = isCharacterUnlocked(character, playerStats);
+
+                    return (
+                        <button
+                            key={character.id}
+                            className={`character-card
+                                ${selectedCharacter === character.id ? 'selected-character' : ''}
+                                ${!unlocked ? 'locked-character' : ''}
+                            `}
+                            onClick={() => unlocked && setSelectedCharacter(character.id)}
+                            disabled={!unlocked}
+                        >
+                            {unlocked ? (
+                                <>
+                                    <img
+                                        src={character.image}
+                                        alt={character.name}
+                                        className="character-card-image"
+                                    />
+                                    <p>{character.name}</p>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="character-locked-placeholder">🔒</div>
+                                    <p className="character-card-name">{character.name}</p>
+                                    <p className="locked-label">{character.unlockCondition.description}</p>
+                                </>
+                            )}
+                        </button>
+                    );
+                })}
             </div>
 
             <div className="character-actions">
@@ -37,7 +53,7 @@ function CharacterSelection({
                 </button>
 
                 <button
-                    className="start-game-button"
+                    className="start-game-button auth-button"
                     onClick={startGame}
                     disabled={!selectedCharacter}
                 >
