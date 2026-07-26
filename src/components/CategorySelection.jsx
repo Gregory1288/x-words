@@ -1,4 +1,6 @@
 function CategorySelection({
+    selectedMode,
+    setSelectedMode,
     selectedCategory,
     setSelectedCategory,
     selectedDifficulty,
@@ -7,6 +9,25 @@ function CategorySelection({
 }) {
     return (
         <div className="category-selection">
+
+            <h2>Select a Game Mode</h2>
+
+            <div className="mode-buttons">
+                <button
+                    onClick={() => setSelectedMode("classic")}
+                    className={selectedMode === "classic" ? "selected-mode" : ""}
+                >
+                    Classic
+                </button>
+
+                <button
+                    onClick={() => setSelectedMode("timed")}
+                    className={selectedMode === "timed" ? "selected-mode" : ""}
+                >
+                    Timed
+                </button>
+            </div>
+
             <h2>Select a Category</h2>
 
             <div className="category-buttons">
@@ -60,7 +81,7 @@ function CategorySelection({
             <button
                 className="start-game-button"
                 onClick={goToCharacterSelection}
-                disabled={!selectedCategory || !selectedDifficulty}
+                disabled={!selectedMode ||!selectedCategory || !selectedDifficulty}
             >
                 Next
             </button>

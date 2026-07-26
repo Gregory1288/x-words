@@ -5,7 +5,7 @@ export function showNotification(setter) {
   }, 2000);
 }
 
-export function checkWin(correct, wrong, word, maxWrongGuesses) {
+export function checkWin(correct, wrong, word, maxWrongGuesses, timedOut = false) {
   let status = 'win';
 
   // Check for win
@@ -16,7 +16,7 @@ export function checkWin(correct, wrong, word, maxWrongGuesses) {
   });
   
   // Check for lose
-  if(wrong.length >= maxWrongGuesses) status = 'lose';
+  if(wrong.length >= maxWrongGuesses || timedOut) status = 'lose';
 
   return status;
 }
