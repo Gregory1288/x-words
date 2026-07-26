@@ -188,10 +188,13 @@ p {
   border: 1px solid rgba(56, 189, 248, 0.28);
   border-radius: 18px 18px 0 0;
   padding: 16px 24px;
-  position: absolute;
+  position: fixed;
   bottom: -70px;
+  left: 50%;
+  transform: translateX(-50%);
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.28);
-  transition: transform 0.3s ease-in-out;
+  transition: bottom 0.3s ease-in-out;
+  z-index: 999;
 }
 
 .notification-container p {
@@ -200,7 +203,7 @@ p {
 }
 
 .notification-container.show {
-  transform: translateY(-70px);
+  bottom: 0;
 }
 
 .category-selection {
@@ -565,6 +568,7 @@ character-selection h2 {
   font-size: 0.85rem;
   color: #94a3b8;
   font-style: italic;
+}
 
 .mode-buttons {
   display: flex;
