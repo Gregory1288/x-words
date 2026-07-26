@@ -175,7 +175,7 @@ export async function getDailyLeaderboard(dateKey = getDailyDateKey()) {
   .slice(0, 10);
 }
 
-export async function updatePlayerStats(userId, roundScore, sessionScore, won, displayName) {
+export async function updatePlayerStats(userId, roundScore, sessionScore, won, displayName, selectedCharacterId) {
   const statsRef = doc(db, 'playerStats', userId);
   const statsSnap = await getDoc(statsRef);
 
@@ -186,6 +186,7 @@ export async function updatePlayerStats(userId, roundScore, sessionScore, won, d
     totalScore: 0,
     highScore: 0,
     displayName: displayName || '',
+    selectedCharacterId: selectedCharacterId || '',
   };
 
   const totalGamesPlayed = existing.totalGamesPlayed + 1;
@@ -201,5 +202,6 @@ export async function updatePlayerStats(userId, roundScore, sessionScore, won, d
     totalScore,
     highScore,
     displayName: displayName || existing.displayName || '',
+    selectedCharacterId: selectedCharacterId || existing.selectedCharacterId || '',
   }, { merge: true });
 }

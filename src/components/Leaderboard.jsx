@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
+import { characters } from '../config/characterConfig'
 
 const Leaderboard = ({ onBack, user }) => {
   const [players, setPlayers] = useState([])
@@ -22,6 +23,11 @@ const Leaderboard = ({ onBack, user }) => {
     return () => unsubscribe()
   }, [])
 
+  function getCharacterImage(selectedCharacterId) {
+    const character = characters.find(c => c.id === selectedCharacterId);
+    return character ? character.image : null;
+  }
+
   return (
     <div className="leaderboard-page">
       <button className="auth-button profile-back" onClick={onBack}>Back</button>
@@ -37,18 +43,36 @@ const Leaderboard = ({ onBack, user }) => {
           <thead>
             <tr>
               <th>#</th>
+              <th>Character</th>
               <th>Player</th>
               <th>High Score</th>
             </tr>
           </thead>
           <tbody>
-            {players.map((player, index) => (
-              <tr key={player.id} className={user && user.uid === player.id ? 'leaderboard-row-highlight' : ''}>
-                <td>{index + 1}</td>
-                <td>{player.displayName || player.id}</td>
-                <td>{player.highScore || 0}</td>
-              </tr>
-            ))}
+            {players.map((player, index) => {
+              const charImage = getCharacterImage(player.selectedCharacterId);
+              return (
+                <tr
+                  key={player.id}
+                  className={user && user.uid === player.id ? 'leaderboard-row-highlight' : ''}
+                >
+                  <td>{index + 1}</td>
+                  <td>
+                    {charImage ? (
+                      <img
+                        src={charImage}
+                        alt={player.selectedCharacterId}
+                        className="leaderboard-character-img"
+                      />
+                    ) : (
+                      <span>—</span>
+                    )}
+                  </td>
+                  <td>{player.displayName || player.id}</td>
+                  <td>{player.highScore || 0}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 import Header from './components/Header'
 import Leaderboard from './components/Leaderboard'
@@ -19,6 +21,7 @@ import {showNotification as show} from "./helpers/helpers"
 import { checkWin } from './helpers/helpers';
 import { getRandomWord, updatePlayerStats, getDailyDateKey, getDailyWord, getDailyAttempt, saveDailyAttempt, } from './helpers/firestore';
 import { auth } from './firebase'
+import { fetchCharacterReaction } from './helpers/ai'
 import './App.css'
 
 
@@ -37,9 +40,12 @@ function App() {
   const [activeScreen, setActiveScreen] = useState('home');
   const [selectedCharacter, setSelectedCharacter] = useState("");
   const [showCharacterSelection, setShowCharacterSelection] = useState(false);
+  const [reaction, setReaction] = useState(null);
+  const [showReaction, setShowReaction] = useState(false);
   const [selectedMode, setSelectedMode] = useState("");
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [timedOut, setTimedOut] = useState(false);
+  const [playerStats, setPlayerStats] = useState(null);
 
   const maxWrongGuesses = selectedDifficulty
     ? difficultySettings[selectedDifficulty].maxWrongGuesses
@@ -72,12 +78,14 @@ function App() {
         if (selectedWord.includes(letter)) {
           if (!correctLetters.includes(letter)) {
             setCorrectLetters(currentLetters => [...currentLetters, letter]);
+            triggerReaction('correct');
           } else {
             show(setShowNotification);
           }
         } else {
           if (!wrongLetters.includes(letter)) {
             setWrongLetters(wrongLetters => [...wrongLetters, letter]);
+            triggerReaction('wrong');
           } else {
             show(setShowNotification);
           }
@@ -90,13 +98,19 @@ function App() {
   }, [correctLetters, wrongLetters, playable, selectedWord]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      if (!currentUser && (activeScreen === 'profile' || activeScreen === "daily-results")) {
-        setActiveScreen('home');
+      if (currentUser) {
+        const statsRef = doc(db, 'playerStats', currentUser.uid);
+        const snap = await getDoc(statsRef);
+        if (snap.exists()) {
+          setPlayerStats(snap.data());
+        }
+      } else {
+        setPlayerStats(null);
+        if ((activeScreen === 'profile' || activeScreen === "daily-results")) setActiveScreen('home');
       }
     });
-
     return unsubscribe;
   }, [activeScreen]);
 
@@ -305,6 +319,9 @@ function App() {
       setLoading(true);
       setGameStarted(true);
       setShowCharacterSelection(false);
+      setReaction(null);      
+      setShowReaction(false);
+      reactionCooldown.current = false;
 
       const word = isDailyWord
         ? dailyWordData.word 
@@ -353,6 +370,14 @@ function App() {
       return;
     }
 
+    reactionCooldown.current = false;
+    setLoading(true);
+    setCorrectLetters([]);
+    setWrongLetters([]);
+    setReaction(null);
+    setShowReaction(false);
+    setTimedOut(false);
+
     const previousResult = checkWin(
       correctLetters,
       wrongLetters,
@@ -361,26 +386,13 @@ function App() {
       timedOut
     );
 
-    setLoading(true);
-    setCorrectLetters([]);
-    setWrongLetters([]);
-    setTimedOut(false);
-
     if (previousResult === 'lose') {
       setScore(0);
     }
 
     try {
       const word = await getRandomWord(selectedCategory);
-
       setSelectedWord(word);
-
-      if (selectedMode === "timed") {
-        setTimeRemaining(timeLimit);
-      } else {
-        setTimeRemaining(null);
-      }
-
       setPlayable(true);
     } catch (error) {
       console.error(error);
@@ -391,9 +403,38 @@ function App() {
   }
 
   async function handleGameComplete({ result, roundScore, sessionScore }) {
+    triggerReaction(result); 
     if (!user) return;
 
-    if (!isDailyWord) {
+    try {
+      await updatePlayerStats(user.uid, roundScore, sessionScore, result === 'win', user.displayName, selectedCharacter);
+    } catch (error) {
+      console.error('Unable to update player stats', error);
+    }
+  }
+  
+  const reactionCooldown = useRef(false);
+
+  async function triggerReaction(outcome) {
+    if (!selectedCharacterData) return;
+    if (reactionCooldown.current) return; 
+
+    reactionCooldown.current = true;
+    setTimeout(() => { reactionCooldown.current = false; }, 10000);
+
+    setShowReaction(false);
+    const result = await fetchCharacterReaction(
+      selectedWord,
+      outcome,
+      selectedCharacterData.personalityType,
+      wrongLetters.length
+    );
+    setReaction(result);
+    setShowReaction(true);
+    setTimeout(() => setShowReaction(false), 3000);
+  }
+
+  if (!isDailyWord) {
       try {
         await updatePlayerStats(user.uid, roundScore, sessionScore, result === 'win', user.displayName);
       } catch (error) {
@@ -494,6 +535,7 @@ function App() {
           setSelectedCharacter={setSelectedCharacter}
           startGame={startGame}
           goBack={goBackToSetup}
+          playerStats={playerStats}
           title={
             isDailyWord
               ? "Choose Your Daily Word Character"
@@ -582,6 +624,8 @@ function App() {
           <div className="game-container">
             <Figure 
               selectedCharacterData={selectedCharacterData}
+              reaction={reaction}                            
+              showReaction={showReaction}  
             />
             <WrongLetters wrongLetters={wrongLetters}/>
             <Word 
