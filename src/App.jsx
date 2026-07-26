@@ -240,7 +240,7 @@ function App() {
     if (!user) return;
 
     try {
-      await updatePlayerStats(user.uid, roundScore, sessionScore, result === 'win', user.displayName);
+      await updatePlayerStats(user.uid, roundScore, sessionScore, result === 'win', user.displayName, selectedCharacter);
     } catch (error) {
       console.error('Unable to update player stats', error);
     }
