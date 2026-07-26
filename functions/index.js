@@ -19,13 +19,12 @@ exports.getCharacterReaction = onCall(async (request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'nvidia/nemotron-3-ultra-550b-a55b:free', // completely free model
+        model: 'google/gemma-4-26b-a4b-it:free', // completely free model
         messages: [
           {
             role: 'user',
-            content: `You are a ${personality} character reacting to a hangman game.
-The player just made a ${outcome} guess. Wrong guesses so far: ${wrongCount}.
-Return JSON only, no markdown, no backticks: { "line": "your one sentence reaction", "tone": "praise|taunt|panic|concern|smug" }`
+            content: `You are a ${personality} character. React to: player made a ${outcome} guess in hangman (${wrongCount} wrong so far).
+JSON only, no markdown: {"line":"one sentence","tone":"praise|taunt|panic|concern|smug"}`
           }
         ],
       })
@@ -64,7 +63,7 @@ exports.getWordFact = onCall(async (request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+        model: 'google/gemma-4-26b-a4b-it:free',
         messages: [
           {
             role: 'user',
