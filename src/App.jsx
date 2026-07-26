@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 
 import Header from './components/Header'
@@ -18,6 +18,7 @@ import {showNotification as show} from "./helpers/helpers"
 import { checkWin } from './helpers/helpers';
 import { getRandomWord, updatePlayerStats } from './helpers/firestore';
 import { auth } from './firebase'
+import { fetchCharacterReaction } from './helpers/ai'
 import './App.css'
 
 
@@ -36,6 +37,8 @@ function App() {
   const [activeScreen, setActiveScreen] = useState('home');
   const [selectedCharacter, setSelectedCharacter] = useState("");
   const [showCharacterSelection, setShowCharacterSelection] = useState(false);
+  const [reaction, setReaction] = useState(null);
+  const [showReaction, setShowReaction] = useState(false);
 
   const maxWrongGuesses = selectedDifficulty
     ? difficultySettings[selectedDifficulty].maxWrongGuesses
@@ -53,12 +56,14 @@ function App() {
         if (selectedWord.includes(letter)) {
           if (!correctLetters.includes(letter)) {
             setCorrectLetters(currentLetters => [...currentLetters, letter]);
+            triggerReaction('correct');
           } else {
             show(setShowNotification);
           }
         } else {
           if (!wrongLetters.includes(letter)) {
             setWrongLetters(wrongLetters => [...wrongLetters, letter]);
+            triggerReaction('wrong');
           } else {
             show(setShowNotification);
           }
@@ -98,6 +103,9 @@ function App() {
       setLoading(true);
       setGameStarted(true);
       setShowCharacterSelection(false);
+      setReaction(null);      
+      setShowReaction(false);
+      reactionCooldown.current = false;
 
       const word = await getRandomWord(selectedCategory);
 
@@ -116,9 +124,12 @@ function App() {
   }
 
   async function playAgain() {
+    reactionCooldown.current = false;
     setLoading(true);
     setCorrectLetters([]);
     setWrongLetters([]);
+    setReaction(null);
+    setShowReaction(false);
 
     if (checkWin(correctLetters, wrongLetters, selectedWord, maxWrongGuesses) === 'lose') {
       setScore(0);
@@ -138,6 +149,7 @@ function App() {
   }
 
   async function handleGameComplete({ result, roundScore, sessionScore }) {
+    triggerReaction(result); 
     if (!user) return;
 
     try {
@@ -146,6 +158,28 @@ function App() {
       console.error('Unable to update player stats', error);
     }
   }
+
+  const reactionCooldown = useRef(false);
+
+  async function triggerReaction(outcome) {
+    if (!selectedCharacterData) return;
+    if (reactionCooldown.current) return; 
+
+    reactionCooldown.current = true;
+    setTimeout(() => { reactionCooldown.current = false; }, 10000);
+
+    setShowReaction(false);
+    const result = await fetchCharacterReaction(
+      selectedWord,
+      outcome,
+      selectedCharacterData.personalityType,
+      wrongLetters.length
+    );
+    setReaction(result);
+    setShowReaction(true);
+    setTimeout(() => setShowReaction(false), 3000);
+  }
+  
   
 
   return (
@@ -197,6 +231,8 @@ function App() {
           <div className="game-container">
             <Figure 
               selectedCharacterData={selectedCharacterData}
+              reaction={reaction}                            
+              showReaction={showReaction}  
             />
             <WrongLetters wrongLetters={wrongLetters}/>
             <Word 
