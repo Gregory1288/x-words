@@ -1,5 +1,5 @@
 import { db } from "../firebase";
-import { collection, addDoc, getDocs, query, where, doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const words = [
 
@@ -61,6 +61,118 @@ export async function getRandomWord(category) {
   const randomIndex = Math.floor(Math.random() * matchingWords.length);
 
   return matchingWords[randomIndex];
+}
+
+const DAILY_WORD_TIME_ZONE = "Asia/Singapore";
+
+export function getDailyDateKey(date = new Date()) {
+  const dateParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: DAILY_WORD_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = dateParts.find((part) => part.type === "year")?.value;
+  const month = dateParts.find((part) => part.type === "month")?.value;
+  const day = dateParts.find((part) => part.type === "day")?.value;
+
+  return `${year}-${month}-${day}`;
+}
+
+export async function getDailyWord(dateKey = getDailyDateKey()) {
+  const dailyWordRef = doc(db, "dailyWords", dateKey);
+  const dailyWordSnapshot = await getDoc(dailyWordRef);
+
+  if (!dailyWordSnapshot.exists()) {
+    throw new Error("No daily word prepared for today.");
+  }
+
+  const dailyWordData = dailyWordSnapshot.data();
+
+  if (!dailyWordData.word || !dailyWordData.category || !dailyWordData.difficulty) {
+    throw new Error("Today's daily word document is incomplete.");
+  }
+
+  return {
+    id: dailyWordSnapshot.id,
+    ...dailyWordData,
+  }
+}
+
+/**
+ * Checks whether the signed-in player has already completed the daily word.
+ */
+export async function getDailyAttempt(userId, dateKey = getDailyDateKey()) {
+  if (!userId) {
+    return null;
+  }
+
+  const attemptRef = doc(db, "dailyWords", dateKey, "attempts", userId);
+  const attemptSnapshot = await getDoc(attemptRef);
+
+  if (!attemptSnapshot.exists()) {
+    return null;
+  }
+
+  return {
+    id: attemptSnapshot.id,
+    ...attemptSnapshot.data(),
+  }
+}
+
+export async function saveDailyAttempt({userId, displayName, dateKey = getDailyDateKey(), result, wrongGuesses, completionTimeSeconds, score}) {
+  if (!userId) {
+    throw new Error("The player must be signed in to save a Daily Word attempt.");
+  }
+
+  const attemptRef = doc(db, "dailyWords", dateKey, "attempts", userId);
+  await setDoc(attemptRef, {
+    userId,
+    displayName: displayName || "Anonymous Player",
+    dateKey,
+    result,
+    won: result === "win",
+    wrongGuesses,
+    completionTimeSeconds,
+    score,
+    completedAt: serverTimestamp(),
+  });
+}
+
+export async function getDailyLeaderboard(dateKey = getDailyDateKey()) {
+  const attemptsCollection = collection(db, "dailyWords", dateKey, "attempts");
+  const attemptsSnapshot = await getDocs(attemptsCollection);
+  const attempts = attemptsSnapshot.docs.map(
+    (attemptDocument) => ({
+      id: attemptDocument.id,
+      ...attemptDocument.data(),
+    })
+  )
+
+  return attempts.sort((firstAttempt, secondAttempt) => {
+    const firstWon = firstAttempt.won === true || firstAttempt.result === "win";
+    const secondWon = secondAttempt.won === true || secondAttempt.result === "win";
+
+    if (firstWon !== secondWon) {
+      return Number(secondWon) - Number(firstWon);
+    }
+
+    const scoreDifference = (secondAttempt.score ?? 0) - (firstAttempt.score ?? 0);
+
+    if (scoreDifference !== 0) {
+      return scoreDifference;
+    }
+
+    const wrongGuessDifference = (firstAttempt.wrongGuesses ?? 0) - (secondAttempt.wrongGuesses ?? 0);
+
+    if (wrongGuessDifference !== 0) {
+      return wrongGuessDifference;
+    }
+    
+    return ((firstAttempt,completionTimeSeconds ?? Infinity) - (secondAttempt.completionTimeSeconds ?? Infinity));
+  })
+  .slice(0, 10);
 }
 
 export async function updatePlayerStats(userId, roundScore, sessionScore, won, displayName, selectedCharacterId) {

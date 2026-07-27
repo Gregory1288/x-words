@@ -2,7 +2,28 @@ import React, { useEffect, useRef, useState } from 'react';
 import { checkWin } from '../helpers/helpers';
 import { fetchWordFact } from '../helpers/ai';
 
-const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAgain, quitGame, score, setScore, maxWrongGuesses, onGameComplete, timedOut, selectedMode, timeRemaining, timeLimit}) => {
+const Popup = ({
+  correctLetters, 
+  wrongLetters, 
+  selectedWord, 
+  setPlayable, 
+  playAgain, 
+  quitGame, 
+  score, 
+  setScore, 
+  maxWrongGuesses, 
+  onGameComplete, 
+  timedOut, 
+  selectedMode, 
+  timeRemaining, 
+  timeLimit, 
+  isDailyWord, 
+  viewDailyResults,
+  dailyAttemptSaving,
+  dailyAttemptSaved,
+  dailyAttemptError,
+  dailyCompletionTimeSeconds,
+}) => {
   let finalMessage = '';
   let finalMessageRevealWord = '';
   let playable = true;
@@ -14,18 +35,27 @@ const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAga
   const baseScore = result === 'win' ? Math.max(6 - wrongLetters.length, 0) : 0;
   const timeBonus = result === 'win' && selectedMode === 'timed' && timeLimit > 0 ? Math.ceil((Math.max(timeRemaining ?? 0, 0) / timeLimit) * 10) : 0;
   const roundScore = result === 'win' ? baseScore + timeBonus : 0;
+  const handlePrimaryAction = isDailyWord 
+    ? viewDailyResults
+    : playAgain;
 
   if (result === 'win') {
-    finalMessage = 'Congratulations! You won! 😃';
+    finalMessage = isDailyWord
+      ? 'Daily Word completed! 🎯'
+      : 'Congratulations! You won! 😃';
     playable = false;
-    buttonText = 'Continue';
+    buttonText = isDailyWord
+      ? 'View Daily Results'
+      : 'Continue';
   } else if( result === 'lose' ) {
     finalMessage = timedOut
       ? 'Time is up! ⏰'
       : 'Unfortunately you lost. 😕';
     finalMessageRevealWord = `...the word was: ${selectedWord}`;
     playable = false;
-    buttonText = 'Try Again';
+    buttonText = isDailyWord
+      ? 'View Daily Results'
+      : 'Try Again';
   }
 
   useEffect(() => {
@@ -59,13 +89,54 @@ const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAga
     setFactLoading(false);
   }, [selectedWord]);
 
+  function formatCompletionTime(totalSeconds) {
+    const safeSeconds = Math.max(totalSeconds ?? 0, 0);
+    const minutes = Math.floor(safeSeconds / 60);
+    const seconds = safeSeconds % 60;
+
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
+
+  function retryDailyAttemptSave() {
+    if (!isDailyWord || dailyAttemptSaving || dailyAttemptSaved) return;
+    onGameComplete?.({result, roundScore,sessionScore: score,});
+  }
+
   return (
     <div className="popup-container" style={finalMessage !== '' ? {display:'flex'} : {}}>
       <div className="popup">
         <h2>{finalMessage}</h2>
         <h3>{finalMessageRevealWord}</h3>
 
-        {result === 'win' && (
+        {isDailyWord && result && (
+          <div className="daily-result-details">
+            <p>
+              Result:{" "}
+              <strong>
+                {result === "win" ? "Completed" : "Lost"}
+              </strong>
+            </p>
+
+            <p>
+              Incorrect guesses:{" "}
+              <strong>{wrongLetters.length}</strong>
+            </p>
+
+            <p>
+              Completion time:{" "}
+              <strong>
+                {formatCompletionTime(dailyCompletionTimeSeconds)}
+              </strong>
+            </p>
+
+            <p>
+              Daily score:{" "}
+              <strong>{roundScore}</strong>
+            </p>
+          </div>
+        )}
+
+        {result === 'win' && !isDailyWord && (
           <div className='score-breakdown'>
             <p>Base Score: {baseScore}</p>
             {selectedMode === 'timed' && (
@@ -77,7 +148,35 @@ const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAga
           </div>
         )}
         
-        <h3>Your score: {score}</h3>
+        {!isDailyWord && (
+          <h3>Your score: {score}</h3>
+        )}
+
+        {isDailyWord && dailyAttemptSaving && (
+          <p className="daily-save-status saving">
+            Saving your Daily Word result...
+          </p>
+        )}
+
+        {isDailyWord && dailyAttemptSaved && (
+          <p className="daily-save-status saved">
+            Result saved successfully! ✅
+          </p>
+        )}
+
+        {isDailyWord && dailyAttemptError && (
+          <div className="daily-save-error">
+            <p>{dailyAttemptError}</p>
+
+            <button
+              type="button"
+              onClick={retryDailyAttemptSave}
+              disabled={dailyAttemptSaving}
+            >
+              Retry Save
+            </button>
+          </div>
+        )}
 
         {(result === 'win' || result === 'lose') && (
           <div className="word-fact">
@@ -90,14 +189,24 @@ const Popup = ({correctLetters, wrongLetters, selectedWord, setPlayable, playAga
         )}
 
         <div className="popup-actions">
-          <button onClick={playAgain}>{buttonText}</button>
-          <button
-            type="button"
-            className="popup-quit-button"
-            onClick={quitGame}
+          <button 
+            onClick={handlePrimaryAction}
+            disabled={isDailyWord && !dailyAttemptSaved}
           >
-            Quit Game
+            {isDailyWord && dailyAttemptSaving
+              ? "Saving Result..."
+              : buttonText}
           </button>
+
+          {!isDailyWord && (
+            <button
+              type="button"
+              className="popup-quit-button"
+              onClick={quitGame}
+            >
+              Quit Game
+            </button>
+          )}
         </div>
       </div>
     </div>

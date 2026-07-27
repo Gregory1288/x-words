@@ -6,11 +6,20 @@ function CharacterSelection({
     setSelectedCharacter,
     startGame,
     goBack,
+    title = "Select a Character",
+    startButtonText = "Start Game",
+    subtitle = "",
     playerStats,
 }) {
     return (
         <div className="character-selection">
-            <h2>Select a Character</h2>
+            <h2>{title}</h2>
+            
+            {subtitle && (
+                <p className="character-selection-subtitle">
+                    {subtitle}
+                </p>
+            )}
 
             <div className="character-grid">
                 {characters.map((character) => {
@@ -18,7 +27,8 @@ function CharacterSelection({
 
                     return (
                         <button
-                            key={character.id}
+                            type="button"
+                        key={character.id}
                             className={`character-card
                                 ${selectedCharacter === character.id ? 'selected-character' : ''}
                                 ${!unlocked ? 'locked-character' : ''}
@@ -48,11 +58,12 @@ function CharacterSelection({
             </div>
 
             <div className="character-actions">
-                <button className="secondary-button" onClick={goBack}>
+                <button type="button" className="secondary-button" onClick={goBack}>
                     Back
                 </button>
 
                 <button
+                    type="button"
                     className="start-game-button auth-button"
                     onClick={startGame}
                     disabled={!selectedCharacter}
